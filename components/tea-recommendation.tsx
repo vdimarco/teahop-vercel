@@ -44,7 +44,7 @@ export function TeaRecommendationComponent() {
 
     // Categorize all flavors
     const allFlavors = loadedTeas.flatMap(tea => tea.flavours)
-    const uniqueFlavors = [...new Set(allFlavors)]
+    const uniqueFlavors = Array.from(new Set(allFlavors))
     
     const categorized: Record<string, string[]> = {
       fruity: [],
