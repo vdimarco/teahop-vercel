@@ -131,7 +131,7 @@ export function TeaRecommendationComponent() {
       <div className="flex flex-col items-center mb-12">
         <div className="w-32 h-16 mb-8 relative">
           <Image
-            src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/logo-MTdJjGfMauo6x6HfoVIMin4MGQqd1M.png?v=2"
+            src="/public/logo.png"
             alt="Tea Hop Logo"
             layout="fill"
             objectFit="contain"
