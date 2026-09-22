@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState, type Dispatch, type SetStateAction } from 'react'
 import { ArrowRight, Check, ChevronLeft, Leaf, RotateCcw, Search, Sparkles, X } from 'lucide-react'
 
 const categories = [
@@ -58,6 +58,17 @@ export function TeaRecommendationComponent() {
   const [activeCategory, setActiveCategory] = useState<Category>('fruity')
   const [query, setQuery] = useState('')
   const [showResults, setShowResults] = useState(false)
+  const [classicView, setClassicView] = useState(false)
+  const [showUpgradeModal, setShowUpgradeModal] = useState(true)
+
+  useEffect(() => {
+    if (window.sessionStorage.getItem('teahop-upgrade-notice-seen')) setShowUpgradeModal(false)
+  }, [])
+
+  const dismissUpgradeModal = () => {
+    window.sessionStorage.setItem('teahop-upgrade-notice-seen', 'true')
+    setShowUpgradeModal(false)
+  }
 
   const flavoursByCategory = useMemo(() => {
     const grouped = Object.fromEntries(categories.map(category => [category.id, [] as string[]])) as Record<Category, string[]>
@@ -94,6 +105,10 @@ export function TeaRecommendationComponent() {
     setActiveCategory('fruity')
   }
 
+  if (classicView) {
+    return <ClassicTeaHop selected={selected} setSelected={setSelected} onUseNew={() => setClassicView(false)} />
+  }
+
   return (
     <main className="min-h-screen overflow-hidden bg-[#f5f0e7] text-[#1d3029]">
       <div className="tea-grain pointer-events-none fixed inset-0 opacity-50" />
@@ -103,7 +118,7 @@ export function TeaRecommendationComponent() {
           <span className="font-serif text-2xl font-semibold tracking-tight">TeaHop</span>
         </div>
         <p className="hidden text-sm text-[#516157] sm:block">Find a tea that feels like you.</p>
-        <button onClick={reset} className="inline-flex items-center gap-2 text-sm font-medium text-[#516157] transition hover:text-[#1d3029]"><RotateCcw size={15} /> Start over</button>
+        <div className="flex items-center gap-4"><button onClick={() => setClassicView(true)} className="text-sm font-medium text-[#516157] underline decoration-[#b45c30]/50 underline-offset-4 transition hover:text-[#1d3029]">Classic view</button><button onClick={reset} className="inline-flex items-center gap-2 text-sm font-medium text-[#516157] transition hover:text-[#1d3029]"><RotateCcw size={15} /> Start over</button></div>
       </header>
 
       <section className="relative mx-auto max-w-6xl px-5 pb-20 md:px-8">
@@ -162,7 +177,26 @@ export function TeaRecommendationComponent() {
           {recommendations.length === 0 && <div className="mt-6 rounded-3xl border border-dashed border-[#1d3029]/20 bg-[#fdfbf6] p-10 text-center"><p className="font-serif text-3xl">No close match yet.</p><p className="mt-2 text-[#516157]">Try a new three-flavour combination—we’ll keep looking.</p></div>}
         </section>}
       </section>
+      {showUpgradeModal && <div className="fixed inset-0 z-30 flex items-end bg-[#1d3029]/35 p-4 backdrop-blur-sm sm:items-center sm:justify-center" role="dialog" aria-modal="true" aria-labelledby="upgrade-title"><div className="w-full max-w-md rounded-[2rem] border border-[#1d3029]/10 bg-[#fdfbf6] p-7 shadow-2xl"><div className="flex items-start justify-between gap-5"><div><p className="text-xs font-bold uppercase tracking-[.18em] text-[#b45c30]">TeaHop update</p><h2 id="upgrade-title" className="mt-2 font-serif text-4xl tracking-tight">We’ve upgraded the UI.</h2></div><button onClick={dismissUpgradeModal} aria-label="Close update notice" className="rounded-full p-2 text-[#516157] hover:bg-[#f5f0e7]"><X size={18} /></button></div><p className="mt-4 leading-relaxed text-[#516157]">A guided flavour picker, clearer match explanations, and a calmer tasting experience are now ready to explore.</p><div className="mt-7 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end"><button onClick={() => { dismissUpgradeModal(); setClassicView(true) }} className="rounded-full border border-[#1d3029]/15 px-5 py-3 text-sm font-bold text-[#1d3029] hover:bg-[#f5f0e7]">Use classic view</button><button onClick={dismissUpgradeModal} className="rounded-full bg-[#1d3029] px-5 py-3 text-sm font-bold text-white hover:bg-[#b45c30]">Explore the new experience</button></div></div></div>}
       <footer className="relative border-t border-[#1d3029]/10 px-5 py-8 text-center text-sm text-[#738177]">TeaHop — made for curious palates.</footer>
     </main>
   )
+}
+
+
+type ClassicTeaHopProps = {
+  selected: string[]
+  setSelected: Dispatch<SetStateAction<string[]>>
+  onUseNew: () => void
+}
+
+function ClassicTeaHop({ selected, setSelected, onUseNew }: ClassicTeaHopProps) {
+  const [activeCategory, setActiveCategory] = useState<Category | null>(null)
+  const [showResults, setShowResults] = useState(false)
+  const toggle = (flavour: string) => {
+    setShowResults(false)
+    setSelected(current => current.includes(flavour) ? current.filter(item => item !== flavour) : current.length < 3 ? [...current, flavour] : [...current.slice(1), flavour])
+  }
+  const matches = teas.filter(tea => tea.flavours.some(flavour => selected.map(canonical).includes(canonical(flavour)))).slice(0, 3)
+  return <main className="min-h-screen bg-white p-6 text-[#171717]"><div className="mx-auto max-w-3xl rounded-lg bg-white p-2 md:p-6"><div className="mb-8 flex items-center justify-between"><div><p className="text-2xl font-bold">TeaHop</p><p className="text-sm text-gray-500">Classic experience</p></div><button onClick={onUseNew} className="rounded-md bg-black px-4 py-2 text-sm font-semibold text-white">Try the new view</button></div><h1 className="mb-6 text-4xl font-bold">Click Three Flavours</h1>{!activeCategory ? <div className="grid grid-cols-2 gap-4 md:grid-cols-4">{categories.map(category => <button key={category.id} onClick={() => setActiveCategory(category.id)} className="rounded-2xl bg-gray-100 p-5 text-center transition hover:bg-gray-200"><span className="block text-3xl">{category.icon}</span><span className="mt-2 block text-lg font-semibold">{category.name}</span></button>)}</div> : <div className="rounded-lg bg-gray-100 p-5"><div className="mb-4 flex items-center justify-between"><h2 className="text-2xl font-bold">{categories.find(item => item.id === activeCategory)?.name} flavours</h2><button onClick={() => setActiveCategory(null)} className="rounded border bg-white px-3 py-2 text-sm">Back</button></div><div className="grid grid-cols-2 gap-3 md:grid-cols-3">{Array.from(new Set(teas.flatMap(tea => tea.flavours))).filter(flavour => categoryFor(flavour) === activeCategory).map(flavour => <button key={flavour} onClick={() => toggle(flavour)} className={`rounded border px-3 py-2 text-left text-sm ${selected.includes(flavour) ? 'bg-black text-white' : 'bg-white'}`}>{flavour}</button>)}</div></div>}<div className="mt-7 flex flex-col justify-between gap-4 border-t pt-5 sm:flex-row sm:items-center"><div><strong>Selected flavours ({selected.length}/3)</strong><div className="mt-2 flex flex-wrap gap-2">{selected.map(flavour => <button key={flavour} onClick={() => toggle(flavour)} className="rounded bg-gray-100 px-3 py-1 text-sm">{flavour} ×</button>)}</div></div><button disabled={selected.length !== 3} onClick={() => setShowResults(true)} className="rounded bg-black px-4 py-3 font-semibold text-white disabled:opacity-40">Recommend Teas</button></div>{showResults && <section className="mt-8 rounded-lg bg-gray-50 p-5"><h2 className="text-2xl font-bold">Recommended Teas</h2><div className="mt-4 grid gap-4">{matches.map(tea => <article key={tea.name} className="rounded bg-white p-4 shadow-sm"><strong>{tea.name}</strong><p className="text-sm text-gray-600">{tea.type} · {tea.vendor}</p></article>)}</div></section>}</div></main>
 }
